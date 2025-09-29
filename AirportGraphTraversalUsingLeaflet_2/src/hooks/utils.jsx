@@ -54,15 +54,18 @@ function BFS(graph, startNode, endNode) {
 		if (currentNode === endNode) {
 			return currentNode;
 		}
-		const neighbors = graph[currentNode];
-		for (const neighbor of neighbors) {
-			if (!visited.has(neighbor.node)) {
-				visited.add(neighbor.node);
-				queue.push(neighbor.node);
+		let neighbors = graph[currentNode];
+		// Check if neighbors exists and is an array before iterating
+		if (Array.isArray(neighbors)) {
+			for (const neighbor of neighbors) {
+				if (!visited.has(neighbor.node)) {
+					visited.add(neighbor.node);
+					queue.push(neighbor.node);
+				}
 			}
 		}
 	}
 	return result;
 }
 
-export default constructGraphFromGeoJSON;
+export { constructGraphFromGeoJSON, BFS };

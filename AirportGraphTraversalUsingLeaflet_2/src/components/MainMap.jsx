@@ -2,12 +2,15 @@ import React from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import constructGraphFromGeoJSON from "../hooks/utils";
+import { constructGraphFromGeoJSON, BFS } from "../hooks/utils";
 
 import flight_routes_geo_json from "../Configuration/flight_routes.json";
 
 const graph = constructGraphFromGeoJSON(flight_routes_geo_json);
+
+const find_node = BFS(graph, "ATL", "LAX");
 console.log(graph);
+console.log("Found Node:", find_node);
 
 const MainMap = () => {
 	/***
