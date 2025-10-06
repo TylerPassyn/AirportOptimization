@@ -47,11 +47,12 @@ function constructGraphFromGeoJSON(geoJson) {
 function BFS(graph, startNode, endNode) {
 	const visited = new Set();
 	const queue = [startNode];
-	const result = [];
 	visited.add(startNode);
 	while (queue.length > 0) {
 		const currentNode = queue.shift();
+		console.log("Visiting Node:", currentNode);
 		if (currentNode === endNode) {
+			console.log("Found Node:", currentNode);
 			return currentNode;
 		}
 		let neighbors = graph[currentNode];
@@ -65,7 +66,35 @@ function BFS(graph, startNode, endNode) {
 			}
 		}
 	}
-	return result;
+	return null; // Return null if the endNode is not found
 }
 
-export { constructGraphFromGeoJSON, BFS };
+function DFS(graph, startNode, endNode) {
+	const visited = new Set();
+
+	function dfsHelper(currentNode) {
+		console.log("Visiting Node:", currentNode);
+		visited.add(currentNode);
+
+		if (currentNode === endNode) {
+			console.log("Found Node:", currentNode);
+			return currentNode;
+		}
+
+		let neighbors = graph[currentNode];
+		// Check if neighbors exists and is an array before iterating
+		if (Array.isArray(neighbors)) {
+			for (const neighbor of neighbors) {
+				if (!visited.has(neighbor.node)) {
+					const result = dfsHelper(neighbor.node);
+					if (result) return result; // Found the target
+				}
+			}
+		}
+		return null;
+	}
+
+	return dfsHelper(startNode);
+}
+
+export { constructGraphFromGeoJSON, BFS, DFS };
