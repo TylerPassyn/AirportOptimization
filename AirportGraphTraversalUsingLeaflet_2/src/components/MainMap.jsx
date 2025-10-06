@@ -16,8 +16,9 @@ console.log("Found Node 2:", find_node2);
 
 const MainMap = () => {
 	const [showLines, setShowLines] = useState(false);
-
+	const random = 0;
 	/***
+	 * A really cool function!
 	 *@abstract Loops through each feature, and binds a popup to it
 	 */
 	function bindPopupstoMarkers(feature, layer) {
