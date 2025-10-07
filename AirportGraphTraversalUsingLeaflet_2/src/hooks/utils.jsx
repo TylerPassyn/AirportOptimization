@@ -1,4 +1,5 @@
 import L from "leaflet";
+import queue from "queue-fifo"; // Import the queue-fifo library for BFS to remove from the front in O(1) while adding to the back in O(1)
 
 /**
  * @abstract Creates a graph adjacency list from a GeoJSON FeatureCollection of points.
@@ -45,28 +46,60 @@ function constructGraphFromGeoJSON(geoJson) {
 }
 
 function BFS(graph, startNode, endNode) {
+	let nodes_visited = [];
 	const visited = new Set();
-	const queue = [startNode];
+	const q = new queue();
+
+	q.enqueue(startNode);
 	visited.add(startNode);
-	while (queue.length > 0) {
-		const currentNode = queue.shift();
+
+	while (q.size() > 0) {
+		const currentNode = q.dequeue(); //removes the first element in O(1) time
+		nodes_visited.push(currentNode);
+		console.log("Visiting Node:", currentNode);
+		if (currentNode === endNode) {
+			console.log("Found Node:", currentNode);
+			return { found: currentNode, visited: nodes_visited };
+		}
+		let neighbors = graph[currentNode];
+		if (Array.isArray(neighbors)) {
+			for (const neighbor of neighbors) {
+				if (!visited.has(neighbor.node)) {
+					visited.add(neighbor.node);
+					q.enqueue(neighbor.node);
+				}
+			}
+		}
+	}
+	return null; // Return null if the endNode is not found
+}
+
+function DFS_stack(graph, startNode, endNode) {
+	// This implementation is correct for an iterative DFS.
+	const visited = new Set();
+	const stack = [];
+	stack.push(startNode);
+	visited.add(startNode);
+
+	while (stack.length > 0) {
+		const currentNode = stack.pop();
 		console.log("Visiting Node:", currentNode);
 		if (currentNode === endNode) {
 			console.log("Found Node:", currentNode);
 			return currentNode;
 		}
 		let neighbors = graph[currentNode];
-		// Check if neighbors exists and is an array before iterating
+		// Check if neighbors exists and is an array before iterating, which is to say check that it is not undefined
 		if (Array.isArray(neighbors)) {
 			for (const neighbor of neighbors) {
 				if (!visited.has(neighbor.node)) {
 					visited.add(neighbor.node);
-					queue.push(neighbor.node);
+					stack.push(neighbor.node);
 				}
 			}
 		}
 	}
-	return null; // Return null if the endNode is not found
+	return null;
 }
 
 function DFS(graph, startNode, endNode) {
@@ -97,4 +130,4 @@ function DFS(graph, startNode, endNode) {
 	return dfsHelper(startNode);
 }
 
-export { constructGraphFromGeoJSON, BFS, DFS };
+export { constructGraphFromGeoJSON, BFS, DFS, DFS_stack };

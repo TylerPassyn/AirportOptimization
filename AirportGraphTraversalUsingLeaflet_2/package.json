@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "leaflet-react": "^3.0.5",
+    "queue-fifo": "^0.2.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-leaflet": "^5.0.0",
