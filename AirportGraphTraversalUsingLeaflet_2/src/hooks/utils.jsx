@@ -130,4 +130,8 @@ function DFS(graph, startNode, endNode) {
 	return dfsHelper(startNode);
 }
 
+//Special note
+//This algoirthm requires that the graph be directred
+function KhansAlgorithm(graph) {}
+
 export { constructGraphFromGeoJSON, BFS, DFS, DFS_stack };
