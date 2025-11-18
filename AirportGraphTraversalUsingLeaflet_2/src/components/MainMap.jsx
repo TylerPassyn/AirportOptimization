@@ -17,8 +17,68 @@ import {
 	KhansAlgorithm,
 } from "../hooks/utils";
 
+const exampleRoutesAndTimes = [
+	{
+		path: ["JFK", "SFO"],
+		routes: [
+			{
+				segments: [{ from: "JFK", to: "SFO", distance: 4139.0, time: 5.5 }],
+				totalDistance: 4139.0,
+				totalTime: 5.5,
+			},
+			{
+				segments: [
+					{ from: "JFK", to: "ORD", distance: 1185.0, time: 2.0 },
+					{ from: "ORD", to: "SFO", distance: 2960.0, time: 4.5 },
+				],
+				totalDistance: 4145.0,
+				totalTime: 6.5,
+			},
+			{
+				segments: [
+					{ from: "JFK", to: "LAX", distance: 3983.0, time: 5.5 },
+					{ from: "LAX", to: "SFO", distance: 543.5, time: 1.25 },
+				],
+				totalDistance: 4526.5,
+				totalTime: 6.75,
+			},
+			{
+				segments: [
+					{ from: "JFK", to: "ATL", distance: 1212.0, time: 2.5 },
+					{ from: "ATL", to: "DEN", distance: 2125.0, time: 3.25 },
+					{ from: "DEN", to: "SFO", distance: 1525.0, time: 2.75 },
+				],
+				totalDistance: 4862.0,
+				totalTime: 8.5,
+			},
+			{
+				segments: [
+					{ from: "JFK", to: "MIA", distance: 1759.0, time: 3.0 },
+					{ from: "MIA", to: "DFW", distance: 1977.0, time: 3.5 },
+					{ from: "DFW", to: "PHX", distance: 1423.0, time: 2.5 },
+					{ from: "PHX", to: "SFO", distance: 1035.0, time: 2.0 },
+				],
+				totalDistance: 6194.0,
+				totalTime: 11.0,
+			},
+			{
+				segments: [
+					{ from: "JFK", to: "BOS", distance: 298.0, time: 1.0 },
+					{ from: "BOS", to: "ORD", distance: 1370.0, time: 2.5 },
+					{ from: "ORD", to: "DEN", distance: 1475.0, time: 2.75 },
+					{ from: "DEN", to: "LAX", distance: 1390.0, time: 2.5 },
+					{ from: "LAX", to: "SFO", distance: 543.5, time: 1.25 },
+				],
+				totalDistance: 5076.5,
+				totalTime: 10.0,
+			},
+		],
+	},
+];
+
 import flight_routes_geo_json from "../Configuration/flight_routes.json";
 import FlightSearch from "./FlightSearch";
+import PossibleRoutesAndTimes from "./PossibleRoutesAndTimes";
 
 const graph = constructGraphFromGeoJSON(flight_routes_geo_json);
 
@@ -59,6 +119,7 @@ function DirectedEdges({ lines }) {
 				color: "green",
 				weight: 3,
 				opacity: 0.7,
+				smoothFactor: 1,
 			}).addTo(map);
 
 			// Add arrow decorator
@@ -280,73 +341,82 @@ const MainMap = () => {
 	}
 
 	return (
-		<div>
-			<FlightSearch graph={graph} onResult={handleSearchResult} />
-			{searchResult && (
-				<div
+		<div
+			style={{
+				display: "grid",
+				gridTemplateColumns: "1fr 3fr 1fr",
+				flexDirection: "row",
+				gap: "1rem",
+				border: "3px solid green",
+			}}>
+			<div>
+				<FlightSearch graph={graph} onResult={handleSearchResult} />
+				{searchResult && (
+					<div
+						style={{
+							margin: "10px",
+							padding: "10px",
+							background: "#f0f0f0",
+							borderRadius: "5px",
+						}}>
+						<h3>Search Result</h3>
+						<p>
+							<strong>Route:</strong> {searchResult.path.join(" → ")}
+						</p>
+						<p>
+							<strong>Distance:</strong>{" "}
+							{Number(searchResult.distance).toFixed(2)} km
+						</p>
+						<p>
+							<strong>From:</strong> {searchResult.start} <strong>To:</strong>{" "}
+							{searchResult.dest}
+						</p>
+					</div>
+				)}
+				<button
+					onClick={toggleLines}
 					style={{
 						margin: "10px",
-						padding: "10px",
-						background: "#f0f0f0",
+						padding: "10px 20px",
+						backgroundColor: showLines ? "#ff4444" : "#4444ff",
+						color: "white",
+						border: "none",
 						borderRadius: "5px",
+						cursor: "pointer",
 					}}>
-					<h3>Search Result</h3>
-					<p>
-						<strong>Route:</strong> {searchResult.path.join(" → ")}
-					</p>
-					<p>
-						<strong>Distance:</strong>{" "}
-						{Number(searchResult.distance).toFixed(2)} km
-					</p>
-					<p>
-						<strong>From:</strong> {searchResult.start} <strong>To:</strong>{" "}
-						{searchResult.dest}
-					</p>
-				</div>
-			)}
-			<button
-				onClick={toggleLines}
-				style={{
-					margin: "10px",
-					padding: "10px 20px",
-					backgroundColor: showLines ? "#ff4444" : "#4444ff",
-					color: "white",
-					border: "none",
-					borderRadius: "5px",
-					cursor: "pointer",
-				}}>
-				{showLines ? "Hide Lines" : "Show Lines Between All Points"}
-			</button>
-			<button
-				onClick={toggleLinesBFSPath}
-				style={{
-					margin: "10px",
-					padding: "10px 20px",
-					backgroundColor: showLinesBFSPath ? "#ff4444" : "#4444ff",
-					color: "white",
-					border: "none",
-					borderRadius: "5px",
-					cursor: "pointer",
-				}}>
-				{showLinesBFSPath ? "Hide BFS Path" : "Show BFS Path"}
-			</button>
-			<button
-				onClick={toggleDirectedGraph}
-				style={{
-					margin: "10px",
-					padding: "10px 20px",
-					backgroundColor: showDirectedGraph ? "#ff4444" : "#44ff44",
-					color: "white",
-					border: "none",
-					borderRadius: "5px",
-					cursor: "pointer",
-				}}>
-				{showDirectedGraph
-					? "Hide Directed Graph"
-					: "Show Directed Graph (Khan's)"}
-			</button>
+					{showLines ? "Hide Lines" : "Show Lines Between All Points"}
+				</button>
+				<button
+					onClick={toggleLinesBFSPath}
+					style={{
+						margin: "10px",
+						padding: "10px 20px",
+						backgroundColor: showLinesBFSPath ? "#ff4444" : "#4444ff",
+						color: "white",
+						border: "none",
+						borderRadius: "5px",
+						cursor: "pointer",
+					}}>
+					{showLinesBFSPath ? "Hide BFS Path" : "Show BFS Path"}
+				</button>
+				<button
+					onClick={toggleDirectedGraph}
+					style={{
+						margin: "10px",
+						padding: "10px 20px",
+						backgroundColor: showDirectedGraph ? "#ff4444" : "#44ff44",
+						color: "white",
+						border: "none",
+						borderRadius: "5px",
+						cursor: "pointer",
+					}}>
+					{showDirectedGraph
+						? "Hide Directed Graph"
+						: "Show Directed Graph (Khan's)"}
+				</button>
+			</div>
 
-			<div style={{ height: "80vh", width: "180vh", border: "3px solid red" }}>
+			<div style={{ height: "80vh", width: "100%", border: "3px solid red" }}>
 				<MapContainer
 					center={[39.8283, -98.5795]}
 					worldCopyJump={true} //make sure that it jumps across the world map
@@ -403,6 +473,7 @@ const MainMap = () => {
 					)}
 				</MapContainer>
 			</div>
+			<PossibleRoutesAndTimes routesAndTimes={exampleRoutesAndTimes} />
 		</div>
 	);
 };
