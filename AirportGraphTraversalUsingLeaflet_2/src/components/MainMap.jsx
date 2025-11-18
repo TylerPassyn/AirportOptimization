@@ -9,9 +9,16 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-polylinedecorator";
-import { constructGraphFromGeoJSON, BFS, DFS, DFS_stack } from "../hooks/utils";
+import {
+	constructGraphFromGeoJSON,
+	BFS,
+	DFS,
+	DFS_stack,
+	KhansAlgorithm,
+} from "../hooks/utils";
 
 import flight_routes_geo_json from "../Configuration/flight_routes.json";
+import FlightSearch from "./FlightSearch";
 
 const graph = constructGraphFromGeoJSON(flight_routes_geo_json);
 
@@ -35,6 +42,10 @@ const find_node5 = DFS_stack(graph, "ATL", "LAX");
 console.log("Found Node 5 (DFS_stack):", find_node5);
 const find_node6 = DFS_stack(graph, "JFK", "LAX");
 console.log("Found Node 6 (DFS_stack):", find_node6);
+
+//display the ordering of nodes in Khan's algorithm
+const find_node7 = KhansAlgorithm(directedGraphForKhans);
+console.log("Found Node 7 (Khan's):", find_node7);
 
 // Component to add arrow decorators to polylines
 function DirectedEdges({ lines }) {
@@ -85,6 +96,39 @@ const MainMap = () => {
 	const [showLines, setShowLines] = useState(false);
 	const [showLinesBFSPath, setShowLinesBFSPath] = useState(false);
 	const [showDirectedGraph, setShowDirectedGraph] = useState(false);
+	const [searchResult, setSearchResult] = useState(null);
+
+	function handleSearchResult(result) {
+		console.log("Received search result:", result);
+		setSearchResult(result);
+	}
+
+	function linesFromPath(pathArray) {
+		console.log("Generating lines from path:", pathArray);
+		const features = flight_routes_geo_json.features;
+		const lines = [];
+		for (let i = 0; i < pathArray.length - 1; i++) {
+			const codeA = pathArray[i];
+			const codeB = pathArray[i + 1];
+			console.log(`Finding features for codes: ${codeA}, ${codeB}`);
+			const featureA = features.find((f) => f.properties.iata_code === codeA);
+			const featureB = features.find((f) => f.properties.iata_code === codeB);
+			console.log("TEST FOR BOTH FEATURES", featureA, featureB);
+			if (!featureA || !featureB) continue;
+			const coordsA = [
+				featureA.geometry.coordinates[1],
+				featureA.geometry.coordinates[0],
+			];
+			const coordsB = [
+				featureB.geometry.coordinates[1],
+				featureB.geometry.coordinates[0],
+			];
+			console.log(`Adding line from ${coordsA} to ${coordsB}`);
+			lines.push([coordsA, coordsB]);
+		}
+		console.log("Generated lines:", lines);
+		return lines;
+	}
 
 	/***
 	 * A really cool function!
@@ -226,10 +270,40 @@ const MainMap = () => {
 
 	function toggleDirectedGraph() {
 		setShowDirectedGraph(!showDirectedGraph);
+		// Run Kahn's algorithm on the directed graph and log results for students
+		try {
+			const result = KhansAlgorithm(directedGraphForKhans);
+			console.log("Kahn's Algorithm:", result);
+		} catch (err) {
+			console.error("Error running Kahn's Algorithm:", err);
+		}
 	}
 
 	return (
 		<div>
+			<FlightSearch graph={graph} onResult={handleSearchResult} />
+			{searchResult && (
+				<div
+					style={{
+						margin: "10px",
+						padding: "10px",
+						background: "#f0f0f0",
+						borderRadius: "5px",
+					}}>
+					<h3>Search Result</h3>
+					<p>
+						<strong>Route:</strong> {searchResult.path.join(" → ")}
+					</p>
+					<p>
+						<strong>Distance:</strong>{" "}
+						{Number(searchResult.distance).toFixed(2)} km
+					</p>
+					<p>
+						<strong>From:</strong> {searchResult.start} <strong>To:</strong>{" "}
+						{searchResult.dest}
+					</p>
+				</div>
+			)}
 			<button
 				onClick={toggleLines}
 				style={{
@@ -275,6 +349,7 @@ const MainMap = () => {
 			<div style={{ height: "80vh", width: "180vh", border: "3px solid red" }}>
 				<MapContainer
 					center={[39.8283, -98.5795]}
+					worldCopyJump={true} //make sure that it jumps across the world map
 					zoom={4}
 					style={{ height: "100%", width: "100%" }}>
 					<TileLayer
@@ -311,6 +386,20 @@ const MainMap = () => {
 
 					{showDirectedGraph && (
 						<DirectedEdges lines={displayDirectedGraphKhan()} />
+					)}
+
+					{searchResult && (
+						<>
+							{linesFromPath(searchResult.path).map((line, idx) => (
+								<Polyline
+									key={`search-${idx}`}
+									positions={line}
+									color="#7b2cbf"
+									weight={4}
+									opacity={0.9}
+								/>
+							))}
+						</>
 					)}
 				</MapContainer>
 			</div>

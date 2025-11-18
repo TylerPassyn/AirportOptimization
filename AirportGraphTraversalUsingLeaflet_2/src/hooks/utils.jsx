@@ -38,8 +38,21 @@ function constructGraphFromGeoJSON(geoJson) {
 				featureB.geometry.coordinates[0]
 			);
 
+			//anti-meridian check
+			//sometimes the shortest distance crosses the anti-meridian, so we need to account for that
+			// Calculate the distance between the two points in kilometers
+
 			const distance = latlngA.distanceTo(latlngB) / 1000; // Convert to kilometers
-			adjacencyList[codeA].push({ node: codeB, weight: distance });
+			if (Math.abs(latlngA.lng - latlngB.lng) > 180) {
+				// Adjust longitudes for anti-meridian crossing
+				const adjustedLngB =
+					latlngB.lng > 0 ? latlngB.lng - 360 : latlngB.lng + 360;
+				const adjustedLatLngB = L.latLng(latlngB.lat, adjustedLngB);
+				const adjustedDistance = latlngA.distanceTo(adjustedLatLngB) / 1000;
+				adjacencyList[codeA].push({ node: codeB, weight: adjustedDistance });
+			} else {
+				adjacencyList[codeA].push({ node: codeB, weight: distance });
+			}
 		}
 	}
 	return adjacencyList;
@@ -132,6 +145,50 @@ function DFS(graph, startNode, endNode) {
 
 //Special note
 //This algoirthm requires that the graph be directred
-function KhansAlgorithm(graph) {}
+function KhansAlgorithm(directedGraph) {
+	// Build indegree map (assume directedGraph: { nodeId: [neighborId, ...], ... })
+	const indegree = {};
 
-export { constructGraphFromGeoJSON, BFS, DFS, DFS_stack };
+	// ensure all nodes (keys) are present with 0 initial indegree
+	for (const node of Object.keys(directedGraph)) {
+		indegree[node] = 0;
+	}
+
+	for (const [u, neighbors] of Object.entries(directedGraph)) {
+		if (!Array.isArray(neighbors)) continue;
+		for (const v of neighbors) {
+			if (!(v in indegree)) indegree[v] = 0;
+			indegree[v] += 1;
+		}
+	}
+
+	// enqueue nodes with indegree 0
+	const q = new queue();
+	for (const [node, deg] of Object.entries(indegree)) {
+		if (deg === 0) q.enqueue(node);
+	}
+
+	const order = [];
+	while (q.size() > 0) {
+		const u = q.dequeue();
+		order.push(u);
+
+		const neighbors = directedGraph[u] || [];
+		for (const v of neighbors) {
+			indegree[v] -= 1;
+			if (indegree[v] === 0) q.enqueue(v);
+		}
+	}
+
+	const allNodesCount = Object.keys(indegree).length;
+	const hasCycle = order.length !== allNodesCount;
+
+	return {
+		order,
+		hasCycle,
+		processed: order.length,
+		totalNodes: allNodesCount,
+	};
+}
+
+export { constructGraphFromGeoJSON, BFS, DFS, DFS_stack, KhansAlgorithm };
